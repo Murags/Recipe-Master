@@ -1,36 +1,91 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# RecipeMaster
+
+RecipeMaster is a full-stack web application that allows users to create, view, and manage recipes. It provides a platform for cooking enthusiasts to share their culinary creations and discover new recipes from other users.
+
+## Features
+
+- User authentication (signup, login, logout)
+- Create and edit recipes with ingredients, instructions, and images
+- View and search for recipes
+- Rate and review recipes
+- User profile management
+- Responsive design for mobile and desktop
+
+## Tech Stack
+
+### Frontend
+- Next.js
+- React
+- Tailwind CSS
+- Axios for API requests
+- React DnD for drag-and-drop functionality
+- FontAwesome for icons
+
+### Backend
+- Node.js
+- Express.js
+- MySQL database
+- Redis for caching
+- Swagger for API documentation
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Node.js (v14 or later)
+- MySQL
+- Redis
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Installation
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+1. Clone the repository:
+   ```
+   git clone https://github.com/your-username/recipemaster.git
+   cd recipemaster
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+2. Install dependencies for both frontend and backend:
+   ```
+   npm install
+   cd api && npm install
+   ```
 
-## Learn More
+3. Set up the database:
+   - Create a MySQL database named `recipemaster`
+   - Run the SQL script in `api/setup.sql` to create the necessary tables
 
-To learn more about Next.js, take a look at the following resources:
+4. Configure environment variables:
+   - Create a `.env` file in the `api` directory with the following variables:
+     ```
+     PORT=5000
+     DB_HOST=localhost
+     DB_USER=your_database_user
+     DB_PASSWORD=your_database_password
+     DB_NAME=recipemaster
+     JWT_SECRET=your_jwt_secret
+     REDIS_URL=redis://localhost:6379
+     ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+5. Start the development servers:
+   - For the frontend:
+     ```
+     npm run dev
+     ```
+   - For the backend:
+     ```
+     cd api && npm run start
+     ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+6. Open your browser and navigate to `http://localhost:3000`
 
-## Deploy on Vercel
+## API Documentation
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The API documentation is available at `http://localhost:5000/api-docs` when the server is running. It provides detailed information about the available endpoints and their usage.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License.
