@@ -25,11 +25,19 @@ class RedisClient {
   }
 
   async set(key, value, time) {
-    await this.client.set(key, value, { EX: time,});
+    const options = time ? { EX: Math.floor(time) } : undefined;
+    await this.client.set(key, value, options);
   }
 
   async del(key) {
     await this.client.del(key);
+  }
+
+  async invalidateCache(pattern) {
+    const keys = await this.client.keys(pattern);
+    if (keys.length > 0) {
+      await this.client.del(keys);
+    }
   }
 }
 

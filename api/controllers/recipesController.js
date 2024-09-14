@@ -1,7 +1,131 @@
 import db from "../utils/db";
 import { v4 } from "uuid";
+import redisClient from "../utils/redis";
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Recipe:
+ *       type: object
+ *       required:
+ *         - id
+ *         - title
+ *         - description
+ *         - cooking_time
+ *         - servings
+ *         - user_id
+ *       properties:
+ *         id:
+ *           type: string
+ *         title:
+ *           type: string
+ *         description:
+ *           type: string
+ *         cooking_time:
+ *           type: integer
+ *         servings:
+ *           type: integer
+ *         user_id:
+ *           type: string
+ *         created_at:
+ *           type: string
+ *           format: date-time
+ *         updated_at:
+ *           type: string
+ *           format: date-time
+ *         average_rating:
+ *           type: number
+ *         review_count:
+ *           type: integer
+ *         ingredients:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/Ingredient'
+ *         images:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/Image'
+ */
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Ingredient:
+ *       type: object
+ *       required:
+ *         - name
+ *         - quantity
+ *         - unit
+ *       properties:
+ *         name:
+ *           type: string
+ *         quantity:
+ *           type: number
+ *         unit:
+ *           type: string
+ */
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Image:
+ *       type: object
+ *       required:
+ *         - image_url
+ *       properties:
+ *         image_url:
+ *           type: string
+ */
 
 export default class RecipeController {
+    /**
+     * @swagger
+     * /recipe:
+     *   post:
+     *     summary: Create a new recipe
+     *     tags: [Recipes]
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - title
+     *               - description
+     *               - cook_time
+     *               - servings
+     *               - ingredients
+     *             properties:
+     *               title:
+     *                 type: string
+     *               description:
+     *                 type: string
+     *               cook_time:
+     *                 type: integer
+     *               servings:
+     *                 type: integer
+     *               ingredients:
+     *                 type: array
+     *                 items:
+     *                   $ref: '#/components/schemas/Ingredient'
+     *               image_urls:
+     *                 type: array
+     *                 items:
+     *                   type: string
+     *     responses:
+     *       201:
+     *         description: Recipe created successfully
+     *       400:
+     *         description: Missing required fields
+     *       500:
+     *         description: Server error
+     */
     static async postRecipe(req, res) {
         const { title, description, cook_time, servings, ingredients, image_urls } = req.body;
         const user_id = req.userId;
@@ -62,6 +186,9 @@ export default class RecipeController {
             await connection.commit();
             res.status(201).json({ message: "Recipe created successfully" });
 
+            await redisClient.invalidateCache('__express__/recipes*');
+            await redisClient.invalidateCache(`__express__/recipe/${recipeId}`);
+
         } catch (error) {
             if (connection) await connection.rollback();
             console.error('Error in recipe creation:', error);
@@ -71,6 +198,27 @@ export default class RecipeController {
         }
     }
 
+    /**
+     * @swagger
+     * /recipes:
+     *   get:
+     *     summary: Get all recipes
+     *     tags: [Recipes]
+     *     responses:
+     *       200:
+     *         description: List of all recipes
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 recipes:
+     *                   type: array
+     *                   items:
+     *                     $ref: '#/components/schemas/Recipe'
+     *       500:
+     *         description: Server error
+     */
     static async getRecipes(req, res) {
         let connection;
         try {
@@ -145,6 +293,30 @@ export default class RecipeController {
         }
     }
 
+    /**
+     * @swagger
+     * /recipe/{id}:
+     *   get:
+     *     summary: Get a specific recipe
+     *     tags: [Recipes]
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Detailed recipe information
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/Recipe'
+     *       404:
+     *         description: Recipe not found
+     *       500:
+     *         description: Server error
+     */
     static async showRecipe(req, res) {
         const { id } = req.query;
         let connection;
@@ -175,6 +347,28 @@ export default class RecipeController {
         }
     }
 
+    /**
+     * @swagger
+     * /recipe/{id}:
+     *   delete:
+     *     summary: Delete a recipe
+     *     tags: [Recipes]
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Recipe deleted successfully
+     *       403:
+     *         description: Unauthorized to delete this recipe
+     *       500:
+     *         description: Server error
+     */
     static async deleteRecipe(req, res) {
         const { id } = req.query;
         const userId = req.userId;
@@ -207,6 +401,51 @@ export default class RecipeController {
         }
     }
 
+    /**
+     * @swagger
+     * /recipe/{id}:
+     *   put:
+     *     summary: Update a recipe
+     *     tags: [Recipes]
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               title:
+     *                 type: string
+     *               description:
+     *                 type: string
+     *               cooking_time:
+     *                 type: integer
+     *               servings:
+     *                 type: integer
+     *               ingredients:
+     *                 type: array
+     *                 items:
+     *                   $ref: '#/components/schemas/Ingredient'
+     *               images:
+     *                 type: array
+     *                 items:
+     *                   $ref: '#/components/schemas/Image'
+     *     responses:
+     *       200:
+     *         description: Recipe updated successfully
+     *       403:
+     *         description: Unauthorized to update this recipe
+     *       500:
+     *         description: Server error
+     */
     static async updateRecipe(req, res) {
         const { id } = req.params;
         const userId = req.userId;

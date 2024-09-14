@@ -1,8 +1,70 @@
 import db from "../utils/db";
 import { v4 } from "uuid"
 import sha1 from "sha1"
+import redisClient from "../utils/redis";
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     User:
+ *       type: object
+ *       required:
+ *         - id
+ *         - username
+ *         - email
+ *       properties:
+ *         id:
+ *           type: string
+ *         username:
+ *           type: string
+ *         email:
+ *           type: string
+ *         created_at:
+ *           type: string
+ *           format: date-time
+ *         updated_at:
+ *           type: string
+ *           format: date-time
+ */
 
 export default class UsersController {
+    /**
+     * @swagger
+     * /users:
+     *   post:
+     *     summary: Create a new user
+     *     tags: [Users]
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - username
+     *               - email
+     *               - password
+     *             properties:
+     *               username:
+     *                 type: string
+     *               email:
+     *                 type: string
+     *               password:
+     *                 type: string
+     *                 format: password
+     *     responses:
+     *       201:
+     *         description: User created successfully
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/User'
+     *       400:
+     *         description: Missing values or user already exists
+     *       500:
+     *         description: Server error
+     */
     static async postNew(req, res) {
         const { username, email, password } = req.body;
         let connection;
@@ -45,6 +107,26 @@ export default class UsersController {
         }
     }
 
+    /**
+     * @swagger
+     * /me:
+     *   get:
+     *     summary: Get current user's profile
+     *     tags: [Users]
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: User profile
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/User'
+     *       404:
+     *         description: User not found
+     *       500:
+     *         description: Server error
+     */
     static async getMe(req, res) {
         const userId = req.userId;
         let connection;
@@ -71,6 +153,29 @@ export default class UsersController {
         }
     }
 
+    /**
+     * @swagger
+     * /me/recipes:
+     *   get:
+     *     summary: Get recipes of the current user
+     *     tags: [Users]
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: List of user's recipes
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 recipes:
+     *                   type: array
+     *                   items:
+     *                     $ref: '#/components/schemas/Recipe'
+     *       500:
+     *         description: Server error
+     */
     static async getRecipes(req, res) {
         const userId = req.userId;
         let connection;
@@ -148,6 +253,39 @@ export default class UsersController {
         }
     }
 
+    /**
+     * @swagger
+     * /me/update:
+     *   put:
+     *     summary: Update current user's profile
+     *     tags: [Users]
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               username:
+     *                 type: string
+     *               oldPassword:
+     *                 type: string
+     *                 format: password
+     *               newPassword:
+     *                 type: string
+     *                 format: password
+     *     responses:
+     *       200:
+     *         description: Profile updated successfully
+     *       400:
+     *         description: Incorrect old password or no changes to update
+     *       404:
+     *         description: User not found
+     *       500:
+     *         description: Server error
+     */
     static async updateProfile(req, res) {
         const userId = req.userId;
         const { username, oldPassword, newPassword } = req.body;
@@ -204,6 +342,20 @@ export default class UsersController {
         }
     }
 
+    /**
+     * @swagger
+     * /me:
+     *   delete:
+     *     summary: Delete current user's account
+     *     tags: [Users]
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Account and all associated data deleted successfully
+     *       500:
+     *         description: Server error
+     */
     static async deleteUser(req, res) {
         const userId = req.userId;
         let connection;

@@ -1,6 +1,75 @@
 import db from "../utils/db";
+import redisClient from "../utils/redis";
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Review:
+ *       type: object
+ *       required:
+ *         - id
+ *         - recipe_id
+ *         - user_id
+ *         - rating
+ *       properties:
+ *         id:
+ *           type: string
+ *         recipe_id:
+ *           type: string
+ *         user_id:
+ *           type: string
+ *         rating:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 5
+ *         comment:
+ *           type: string
+ *         created_at:
+ *           type: string
+ *           format: date-time
+ *         updated_at:
+ *           type: string
+ *           format: date-time
+ *         username:
+ *           type: string
+ */
 
 export default class ReviewController {
+    /**
+     * @swagger
+     * /review:
+     *   post:
+     *     summary: Create a new review
+     *     tags: [Reviews]
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - recipe_id
+     *               - rating
+     *             properties:
+     *               recipe_id:
+     *                 type: string
+     *               rating:
+     *                 type: integer
+     *                 minimum: 1
+     *                 maximum: 5
+     *               comment:
+     *                 type: string
+     *     responses:
+     *       201:
+     *         description: Review created successfully
+     *       400:
+     *         description: Invalid review data or user has already reviewed this recipe
+     *       500:
+     *         description: Server error
+     */
     static async createReview(req, res) {
         const { recipe_id, rating, comment } = req.body;
         const user_id = req.userId;
@@ -43,6 +112,33 @@ export default class ReviewController {
         }
     }
 
+    /**
+     * @swagger
+     * /reviews/{recipe_id}:
+     *   get:
+     *     summary: Get reviews for a specific recipe
+     *     tags: [Reviews]
+     *     parameters:
+     *       - in: path
+     *         name: recipe_id
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: List of reviews for the recipe
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 reviews:
+     *                   type: array
+     *                   items:
+     *                     $ref: '#/components/schemas/Review'
+     *       500:
+     *         description: Server error
+     */
     static async getReviewsForRecipe(req, res) {
         const { recipe_id } = req.params;
         let connection;
@@ -68,6 +164,43 @@ export default class ReviewController {
         }
     }
 
+    /**
+     * @swagger
+     * /review/{id}:
+     *   put:
+     *     summary: Update a review
+     *     tags: [Reviews]
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - rating
+     *             properties:
+     *               rating:
+     *                 type: integer
+     *                 minimum: 1
+     *                 maximum: 5
+     *               comment:
+     *                 type: string
+     *     responses:
+     *       200:
+     *         description: Review updated successfully
+     *       403:
+     *         description: Unauthorized to update this review
+     *       500:
+     *         description: Server error
+     */
     static async updateReview(req, res) {
         const { id } = req.params;
         const { rating, comment } = req.body;
@@ -111,6 +244,28 @@ export default class ReviewController {
         }
     }
 
+    /**
+     * @swagger
+     * /review/{id}:
+     *   delete:
+     *     summary: Delete a review
+     *     tags: [Reviews]
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Review deleted successfully
+     *       403:
+     *         description: Unauthorized to delete this review
+     *       500:
+     *         description: Server error
+     */
     static async deleteReview(req, res) {
         const { id } = req.params;
         const user_id = req.userId;
@@ -146,6 +301,21 @@ export default class ReviewController {
         }
     }
 
+    /**
+     * @swagger
+     * components:
+     *   schemas:
+     *     RecipeRating:
+     *       type: object
+     *       properties:
+     *         average_rating:
+     *           type: number
+     *         review_count:
+     *           type: integer
+     */
+
+    // This method is not directly exposed as an API endpoint,
+    // but it's used internally to update recipe ratings
     static async updateRecipeRating(connection, recipe_id) {
         const updateSql = `
             UPDATE recipes r

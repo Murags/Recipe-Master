@@ -4,6 +4,8 @@ import AuthController from "../controllers/AuthController";
 import authMiddleware from "../middleware/authMiddleware";
 import RecipeController from "../controllers/recipesController";
 import ReviewController from "../controllers/ReviewController";
+import cacheMiddleware from "../middleware/cacheMiddleware";
+
 
 const router = express.Router()
 
@@ -17,9 +19,53 @@ router.post('/auth/login', AuthController.Login);
 
 router.get('/auth/logout', authMiddleware, AuthController.disconnect);
 router.post('/recipe', authMiddleware, RecipeController.postRecipe);
-router.get('/recipes', RecipeController.getRecipes);
+router.get('/recipes', cacheMiddleware(300), RecipeController.getRecipes);
 
-router.get('/recipe/:id', RecipeController.showRecipe);
+/**
+ * @swagger
+ * /recipes:
+ *   get:
+ *     summary: Retrieve a list of recipes
+ *     tags: [Recipes]
+ *     responses:
+ *       200:
+ *         description: A list of recipes
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 recipes:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Recipe'
+ */
+router.get('/recipes', cacheMiddleware(300), RecipeController.getRecipes);
+
+/**
+ * @swagger
+ * /recipe/{id}:
+ *   get:
+ *     summary: Get a specific recipe by ID
+ *     tags: [Recipes]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The recipe ID
+ *     responses:
+ *       200:
+ *         description: Details of a specific recipe
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Recipe'
+ *       404:
+ *         description: Recipe not found
+ */
+router.get('/recipe/:id', cacheMiddleware(300), RecipeController.showRecipe);
 router.put('/recipe/:id', authMiddleware, RecipeController.updateRecipe);
 router.delete('/recipe/:id', authMiddleware, RecipeController.deleteRecipe);
 
