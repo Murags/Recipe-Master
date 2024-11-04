@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  api:
+    build: .           # Changed from ./api to . since we're already in api directory
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - DB_HOST=mysql
+      - DB_USER=recipemaster_dev
+      - DB_PASSWORD=123
+      - DB_NAME=recipemaster
+      - DB_PORT=3306
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - mysql
+      - redis
+    volumes:
+      - .:/usr/src/app  # Changed from ./api to . since we're already in api directory
+      - /usr/src/app/node_modules
+    networks:
+      - recipe-network
+
+  mysql:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=recipemaster
+      - MYSQL_USER=recipemaster_dev
+      - MYSQL_PASSWORD=123
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./setup.sql:/docker-entrypoint-initdb.d/setup.sql  # Changed from ./api/setup.sql
+    networks:
+      - recipe-network
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - recipe-network
+
+volumes:
+  mysql-data:
+  redis-data:
+
+networks:
+  recipe-network:
+    driver: bridge
